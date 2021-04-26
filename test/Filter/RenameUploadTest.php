@@ -12,9 +12,23 @@ use DirectoryIterator;
 use Laminas\Http\Request as HttpRequest;
 use PHPUnit\Framework\TestCase;
 
+use function file_exists;
+use function file_put_contents;
+use function filesize;
+use function is_dir;
+use function mkdir;
+use function rmdir;
+use function sprintf;
+use function sys_get_temp_dir;
+use function tempnam;
+use function unlink;
+
+use const DIRECTORY_SEPARATOR;
+use const UPLOAD_ERR_OK;
+
 class RenameUploadTest extends TestCase
 {
-    protected function setUp()
+    protected function setUp(): void
     {
         $this->tmpDir    = sys_get_temp_dir() . '/api-tools-content-negotiation-filter';
         $this->uploadDir = $this->tmpDir . '/upload';
@@ -25,7 +39,7 @@ class RenameUploadTest extends TestCase
         mkdir($this->targetDir);
     }
 
-    protected function tearDown()
+    protected function tearDown(): void
     {
         if (! is_dir($this->tmpDir)) {
             return;
@@ -42,22 +56,27 @@ class RenameUploadTest extends TestCase
         rmdir($this->tmpDir);
     }
 
+    /**
+     * @return array
+     */
     public function createUploadFile()
     {
         $filename = tempnam($this->uploadDir, 'laminasc');
-        file_put_contents($filename, sprintf('File created by %s', __CLASS__));
+        file_put_contents($filename, sprintf('File created by %s', self::class));
 
-        $file = [
+        return [
             'name'     => 'test.txt',
             'type'     => 'text/plain',
             'tmp_name' => $filename,
             'size'     => filesize($filename),
             'error'    => UPLOAD_ERR_OK,
         ];
-
-        return $file;
     }
 
+    /**
+     * @param string $dir
+     * @return void
+     */
     public function removeDir($dir)
     {
         $it = new DirectoryIterator($dir);
@@ -75,6 +94,9 @@ class RenameUploadTest extends TestCase
         rmdir($dir);
     }
 
+    /**
+     * @return string[][]
+     */
     public function uploadMethods()
     {
         return [
@@ -84,6 +106,7 @@ class RenameUploadTest extends TestCase
     }
 
     /**
+     * @param string $method
      * @dataProvider uploadMethods
      */
     public function testMoveUploadedFileSucceedsOnPutAndPatchHttpRequests($method)
@@ -97,7 +120,7 @@ class RenameUploadTest extends TestCase
         $filter->setRequest($request);
 
         $result = $filter->filter($file);
-        $this->assertInternalType('array', $result);
+        $this->assertIsArray($result);
         $this->assertArrayHasKey('tmp_name', $result);
         $this->assertEquals($target, $result['tmp_name']);
 

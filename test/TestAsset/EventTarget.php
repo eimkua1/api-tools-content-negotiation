@@ -8,10 +8,16 @@
 
 namespace LaminasTest\ApiTools\ContentNegotiation\TestAsset;
 
+use Laminas\EventManager\EventManagerInterface;
+
 class EventTarget
 {
+    /** @var EventManagerInterface */
     public $events;
 
+    /**
+     * @return EventManagerInterface
+     */
     public function getEventManager()
     {
         return $this->events;

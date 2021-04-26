@@ -24,12 +24,11 @@ class RenameUploadFilterFactory implements FactoryInterface
     private $options;
 
     /**
-     * @param  ContainerInterface $container
      * @param string $requestedName,
      * @param null|array $options
      * @return RenameUpload
      */
-    public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
+    public function __invoke(ContainerInterface $container, $requestedName, ?array $options = null)
     {
         $filter = new RenameUpload($options);
 
@@ -43,7 +42,6 @@ class RenameUploadFilterFactory implements FactoryInterface
     /**
      * Create and return a RenameUpload filter (v2 compatibility)
      *
-     * @param ServiceLocatorInterface $container
      * @param null|string $name
      * @param null|string $requestedName
      * @return RenameUpload

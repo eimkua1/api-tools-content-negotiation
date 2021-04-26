@@ -15,7 +15,6 @@ use Laminas\ApiTools\ContentNegotiation\ContentNegotiationOptions;
 class AcceptFilterListenerFactory
 {
     /**
-     * @param  ContainerInterface $container
      * @return AcceptFilterListener
      */
     public function __invoke(ContainerInterface $container)

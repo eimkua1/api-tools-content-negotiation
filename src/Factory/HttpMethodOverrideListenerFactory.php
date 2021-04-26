@@ -15,15 +15,12 @@ use Laminas\ApiTools\ContentNegotiation\HttpMethodOverrideListener;
 class HttpMethodOverrideListenerFactory
 {
     /**
-     * @param  ContainerInterface $container
      * @return HttpMethodOverrideListener
      */
     public function __invoke(ContainerInterface $container)
     {
-        $options = $container->get(ContentNegotiationOptions::class);
+        $options             = $container->get(ContentNegotiationOptions::class);
         $httpOverrideMethods = $options->getHttpOverrideMethods();
-        $listener = new HttpMethodOverrideListener($httpOverrideMethods);
-
-        return $listener;
+        return new HttpMethodOverrideListener($httpOverrideMethods);
     }
 }

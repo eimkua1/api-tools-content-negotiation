@@ -10,19 +10,13 @@ namespace Laminas\ApiTools\ContentNegotiation;
 
 class ParameterDataContainer
 {
-    /**
-     * @var array
-     */
+    /** @var array */
     protected $routeParams = [];
 
-    /**
-     * @var array
-     */
+    /** @var array */
     protected $queryParams = [];
 
-    /**
-     * @var array
-     */
+    /** @var array */
     protected $bodyParams = [];
 
     /**

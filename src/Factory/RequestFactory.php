@@ -13,10 +13,13 @@ use Laminas\ApiTools\ContentNegotiation\Request as HttpRequest;
 use Laminas\Console\Console;
 use Laminas\Console\Request as ConsoleRequest;
 
+use function class_exists;
+
+use const PHP_SAPI;
+
 class RequestFactory
 {
     /**
-     * @param  ContainerInterface $container
      * @return ConsoleRequest|HttpRequest
      */
     public function __invoke(ContainerInterface $container)

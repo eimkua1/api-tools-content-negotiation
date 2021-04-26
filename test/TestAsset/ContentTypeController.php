@@ -9,9 +9,14 @@
 namespace LaminasTest\ApiTools\ContentNegotiation\TestAsset;
 
 use Laminas\Mvc\Controller\AbstractActionController;
+use Laminas\Stdlib\RequestInterface as Request;
 
 class ContentTypeController extends AbstractActionController
 {
+    /**
+     * @param Request $request
+     * @return void
+     */
     public function setRequest($request)
     {
         $this->request = $request;

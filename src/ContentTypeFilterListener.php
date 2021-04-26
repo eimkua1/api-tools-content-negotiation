@@ -15,6 +15,8 @@ use Laminas\EventManager\EventManagerInterface;
 use Laminas\Mvc\MvcEvent;
 use Laminas\Stdlib\ArrayUtils;
 
+use function method_exists;
+
 class ContentTypeFilterListener extends AbstractListenerAggregate
 {
     /**
@@ -25,7 +27,6 @@ class ContentTypeFilterListener extends AbstractListenerAggregate
     protected $config = [];
 
     /**
-     * @param  EventManagerInterface $events
      * @param int                    $priority
      */
     public function attach(EventManagerInterface $events, $priority = 1)
@@ -48,7 +49,6 @@ class ContentTypeFilterListener extends AbstractListenerAggregate
     /**
      * Test if the content-type received is allowable.
      *
-     * @param  MvcEvent $e
      * @return null|ApiProblemResponse
      */
     public function onRoute(MvcEvent $e)

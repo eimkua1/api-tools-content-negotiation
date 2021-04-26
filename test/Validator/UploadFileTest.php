@@ -12,13 +12,23 @@ use Laminas\ApiTools\ContentNegotiation\Validator\UploadFile;
 use Laminas\Http\Request as HttpRequest;
 use PHPUnit\Framework\TestCase;
 
+use function basename;
+use function filesize;
+use function realpath;
+use function var_export;
+
+use const UPLOAD_ERR_OK;
+
 class UploadFileTest extends TestCase
 {
-    protected function setUp()
+    protected function setUp(): void
     {
         $this->validator = new UploadFile();
     }
 
+    /**
+     * @return string[][]
+     */
     public function uploadMethods()
     {
         return [
@@ -28,6 +38,7 @@ class UploadFileTest extends TestCase
     }
 
     /**
+     * @param string $method
      * @dataProvider uploadMethods
      */
     public function testDoesNotMarkUploadFileAsInvalidForPutAndPatchHttpRequests($method)

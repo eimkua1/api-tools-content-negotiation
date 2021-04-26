@@ -12,11 +12,6 @@ use Laminas\ApiTools\ContentNegotiation\ParameterDataContainer;
 use Laminas\Mvc\Controller\AbstractController;
 use Laminas\Mvc\Controller\Plugin\AbstractPlugin;
 
-/**
- * @category   Laminas
- * @package    Laminas_Mvc
- * @subpackage Controller
- */
 class QueryParam extends AbstractPlugin
 {
     /**

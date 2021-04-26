@@ -36,13 +36,12 @@ class Module
      * Attaches the AcceptListener as a shared listener for controller dispatch
      * events.
      *
-     * @param MvcEvent $e
      * @return void
      */
     public function onBootstrap(MvcEvent $e)
     {
-        $app = $e->getApplication();
-        $services = $app->getServiceManager();
+        $app          = $e->getApplication();
+        $services     = $app->getServiceManager();
         $eventManager = $app->getEventManager();
 
         $eventManager->attach(MvcEvent::EVENT_ROUTE, $services->get(ContentTypeListener::class), -625);

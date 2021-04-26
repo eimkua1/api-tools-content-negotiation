@@ -16,7 +16,6 @@ use Laminas\Mvc\Controller\Plugin\AcceptableViewModelSelector;
 class AcceptListenerFactory
 {
     /**
-     * @param  ContainerInterface $container
      * @return AcceptListener
      */
     public function __invoke(ContainerInterface $container)
@@ -30,7 +29,6 @@ class AcceptListenerFactory
     /**
      * Retrieve or generate the AcceptableViewModelSelector plugin instance.
      *
-     * @param  ContainerInterface $container
      * @return AcceptableViewModelSelector
      */
     private function getAcceptableViewModelSelector(ContainerInterface $container)

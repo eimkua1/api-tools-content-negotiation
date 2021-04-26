@@ -8,6 +8,7 @@
 
 namespace LaminasTest\ApiTools\ContentNegotiation\Factory;
 
+use Laminas\ApiTools\ContentNegotiation\AcceptListener;
 use Laminas\ApiTools\ContentNegotiation\ContentNegotiationOptions;
 use Laminas\ApiTools\ContentNegotiation\Factory\AcceptListenerFactory;
 use Laminas\ServiceManager\ServiceManager;
@@ -19,7 +20,7 @@ class AcceptListenerFactoryTest extends TestCase
     {
         $serviceManager = new ServiceManager();
         $serviceManager->setService(
-            'Laminas\ApiTools\ContentNegotiation\ContentNegotiationOptions',
+            ContentNegotiationOptions::class,
             new ContentNegotiationOptions()
         );
 
@@ -27,6 +28,6 @@ class AcceptListenerFactoryTest extends TestCase
 
         $service = $factory($serviceManager, 'AcceptListener');
 
-        $this->assertInstanceOf('Laminas\ApiTools\ContentNegotiation\AcceptListener', $service);
+        $this->assertInstanceOf(AcceptListener::class, $service);
     }
 }

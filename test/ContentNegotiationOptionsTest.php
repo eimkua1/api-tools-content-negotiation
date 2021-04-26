@@ -13,6 +13,9 @@ use PHPUnit\Framework\TestCase;
 
 class ContentNegotiationOptionsTest extends TestCase
 {
+    /**
+     * @return string[][]
+     */
     public function dashSeparatedOptions()
     {
         return [
@@ -24,17 +27,21 @@ class ContentNegotiationOptionsTest extends TestCase
     }
 
     /**
+     * @param string $key
+     * @param string $normalized
      * @dataProvider dashSeparatedOptions
      */
     public function testSetNormalizesDashSeparatedKeysToUnderscoreSeparated($key, $normalized)
     {
-        $options = new ContentNegotiationOptions();
+        $options         = new ContentNegotiationOptions();
         $options->{$key} = ['value'];
         $this->assertEquals(['value'], $options->{$key});
         $this->assertEquals(['value'], $options->{$normalized});
     }
 
     /**
+     * @param string $key
+     * @param string $normalized
      * @dataProvider dashSeparatedOptions
      */
     public function testConstructorAllowsDashSeparatedKeys($key, $normalized)
@@ -45,15 +52,17 @@ class ContentNegotiationOptionsTest extends TestCase
     }
 
     /**
+     * @param string $key
+     * @param string $normalized
      * @dataProvider dashSeparatedOptions
      */
     public function testDashAndUnderscoreSeparatedValuesGetMerged(
         $key,
         $normalized
     ) {
-        $keyValue = 'valueKey';
+        $keyValue        = 'valueKey';
         $normalizedValue = 'valueNormalized';
-        $expectedResult = [
+        $expectedResult  = [
             $keyValue,
             $normalizedValue,
         ];
@@ -61,7 +70,7 @@ class ContentNegotiationOptionsTest extends TestCase
         $options = new ContentNegotiationOptions();
         $options->setFromArray(
             [
-                $key => [
+                $key        => [
                     $keyValue,
                 ],
                 $normalized => [

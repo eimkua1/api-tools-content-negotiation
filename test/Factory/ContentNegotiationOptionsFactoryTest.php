@@ -8,6 +8,7 @@
 
 namespace LaminasTest\ApiTools\ContentNegotiation\Factory;
 
+use Laminas\ApiTools\ContentNegotiation\ContentNegotiationOptions;
 use Laminas\ApiTools\ContentNegotiation\Factory\ContentNegotiationOptionsFactory;
 use Laminas\ServiceManager\ServiceManager;
 use PHPUnit\Framework\TestCase;
@@ -29,7 +30,7 @@ class ContentNegotiationOptionsFactoryTest extends TestCase
 
         $service = $factory($serviceManager, 'ContentNegotiationOptions');
 
-        $this->assertInstanceOf('Laminas\ApiTools\ContentNegotiation\ContentNegotiationOptions', $service);
+        $this->assertInstanceOf(ContentNegotiationOptions::class, $service);
     }
 
     public function testCreateServiceShouldReturnContentNegotiationOptionsInstanceWithOptions()

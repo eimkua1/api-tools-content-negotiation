@@ -8,10 +8,15 @@
 
 namespace LaminasTest\ApiTools\ContentNegotiation\TestAsset;
 
+use function json_encode;
+
 class BodyContent
 {
+    /**
+     * @return string
+     */
     public function __toString()
     {
-        return json_encode(['foo' => 'bar']);
+        return (string) json_encode(['foo' => 'bar']);
     }
 }

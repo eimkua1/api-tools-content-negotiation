@@ -14,6 +14,9 @@ use Laminas\Mvc\Controller\Plugin\AbstractPlugin;
 
 class QueryParams extends AbstractPlugin
 {
+    /**
+     * @return array
+     */
     public function __invoke()
     {
         $controller = $this->getController();

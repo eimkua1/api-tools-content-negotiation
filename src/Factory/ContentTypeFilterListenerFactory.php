@@ -15,7 +15,6 @@ use Laminas\ApiTools\ContentNegotiation\ContentTypeFilterListener;
 class ContentTypeFilterListenerFactory
 {
     /**
-     * @param  ContainerInterface $container
      * @return ContentTypeFilterListener
      */
     public function __invoke(ContainerInterface $container)

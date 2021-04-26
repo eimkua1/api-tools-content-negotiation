@@ -9,6 +9,7 @@
 namespace LaminasTest\ApiTools\ContentNegotiation\Factory;
 
 use Laminas\ApiTools\ContentNegotiation\ContentNegotiationOptions;
+use Laminas\ApiTools\ContentNegotiation\ContentTypeFilterListener;
 use Laminas\ApiTools\ContentNegotiation\Factory\ContentTypeFilterListenerFactory;
 use Laminas\ServiceManager\ServiceManager;
 use PHPUnit\Framework\TestCase;
@@ -19,7 +20,7 @@ class ContentTypeFilterListenerFactoryTest extends TestCase
     {
         $serviceManager = new ServiceManager();
         $serviceManager->setService(
-            'Laminas\ApiTools\ContentNegotiation\ContentNegotiationOptions',
+            ContentNegotiationOptions::class,
             new ContentNegotiationOptions()
         );
 
@@ -27,6 +28,6 @@ class ContentTypeFilterListenerFactoryTest extends TestCase
 
         $service = $factory($serviceManager, 'ContentTypeFilterListener');
 
-        $this->assertInstanceOf('Laminas\ApiTools\ContentNegotiation\ContentTypeFilterListener', $service);
+        $this->assertInstanceOf(ContentTypeFilterListener::class, $service);
     }
 }

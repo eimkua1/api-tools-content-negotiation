@@ -11,16 +11,14 @@ namespace Laminas\ApiTools\ContentNegotiation\Validator;
 use Laminas\Stdlib\RequestInterface;
 use Laminas\Validator\File\UploadFile as BaseValidator;
 
+use function count;
+use function method_exists;
+
 class UploadFile extends BaseValidator
 {
-    /**
-     * @var null|RequestInterface
-     */
+    /** @var null|RequestInterface */
     protected $request;
 
-    /**
-     * @param RequestInterface $request
-     */
     public function setRequest(RequestInterface $request)
     {
         $this->request = $request;
@@ -33,11 +31,12 @@ class UploadFile extends BaseValidator
      * is_uploaded_file() has failed -- which is
      *
      * @param mixed $value
-     * @return void
+     * @return bool
      */
     public function isValid($value)
     {
-        if (null === $this->request
+        if (
+            null === $this->request
             || ! method_exists($this->request, 'isPut')
             || (! $this->request->isPut()
                 && ! $this->request->isPatch())

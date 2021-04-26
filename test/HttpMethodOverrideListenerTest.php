@@ -14,34 +14,31 @@ use Laminas\Http\Request as HttpRequest;
 use Laminas\Mvc\MvcEvent;
 use PHPUnit\Framework\TestCase;
 
+use function sprintf;
+
 class HttpMethodOverrideListenerTest extends TestCase
 {
     use RouteMatchFactoryTrait;
 
-    /**
-     * @var HttpMethodOverrideListener
-     */
+    /** @var HttpMethodOverrideListener */
     protected $listener;
 
-    /**
-     * @var array
-     */
+    /** @var array */
     protected $httpMethodOverride = [
-        HttpRequest::METHOD_GET => [
+        HttpRequest::METHOD_GET  => [
             HttpRequest::METHOD_HEAD,
             HttpRequest::METHOD_POST,
             HttpRequest::METHOD_PUT,
             HttpRequest::METHOD_DELETE,
             HttpRequest::METHOD_PATCH,
         ],
-        HttpRequest::METHOD_POST => [
-        ],
+        HttpRequest::METHOD_POST => [],
     ];
 
     /**
      * Set up test
      */
-    protected function setUp()
+    protected function setUp(): void
     {
         $this->listener = new HttpMethodOverrideListener($this->httpMethodOverride);
     }
@@ -52,15 +49,16 @@ class HttpMethodOverrideListenerTest extends TestCase
     public function httpMethods()
     {
         return [
-            'head' => [HttpRequest::METHOD_HEAD],
-            'post' => [HttpRequest::METHOD_POST],
-            'put' => [HttpRequest::METHOD_PUT],
+            'head'   => [HttpRequest::METHOD_HEAD],
+            'post'   => [HttpRequest::METHOD_POST],
+            'put'    => [HttpRequest::METHOD_PUT],
             'delete' => [HttpRequest::METHOD_DELETE],
-            'patch' => [HttpRequest::METHOD_PATCH],
+            'patch'  => [HttpRequest::METHOD_PATCH],
         ];
     }
 
     /**
+     * @param string $method
      * @dataProvider httpMethods
      */
     public function testHttpMethodOverrideListener($method)
@@ -80,6 +78,7 @@ class HttpMethodOverrideListenerTest extends TestCase
     }
 
     /**
+     * @param string $method
      * @dataProvider httpMethods
      */
     public function testHttpMethodOverrideListenerReturnsProblemResponseForMethodNotInConfig($method)
@@ -97,13 +96,14 @@ class HttpMethodOverrideListenerTest extends TestCase
         $this->assertInstanceOf(ApiProblemResponse::class, $result);
         $problem = $result->getApiProblem();
         $this->assertEquals(400, $problem->status);
-        $this->assertContains(
+        $this->assertStringContainsString(
             'Overriding PATCH method with X-HTTP-Method-Override header is not allowed',
             $problem->detail
         );
     }
 
     /**
+     * @param string $method
      * @dataProvider httpMethods
      */
     public function testHttpMethodOverrideListenerReturnsProblemResponseForIllegalOverrideValue($method)
@@ -121,7 +121,7 @@ class HttpMethodOverrideListenerTest extends TestCase
         $this->assertInstanceOf(ApiProblemResponse::class, $result);
         $problem = $result->getApiProblem();
         $this->assertEquals(400, $problem->status);
-        $this->assertContains(
+        $this->assertStringContainsString(
             sprintf('Illegal override method %s in X-HTTP-Method-Override header', $method),
             $problem->detail
         );

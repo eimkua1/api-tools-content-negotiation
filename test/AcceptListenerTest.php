@@ -8,29 +8,34 @@
 
 namespace LaminasTest\ApiTools\ContentNegotiation;
 
+use Laminas\ApiTools\ApiProblem\ApiProblemResponse;
 use Laminas\ApiTools\ContentNegotiation\AcceptListener;
 use Laminas\Http\Request;
 use Laminas\Mvc\Controller\PluginManager as ControllerPluginManager;
 use Laminas\Mvc\MvcEvent;
 use Laminas\ServiceManager\ServiceManager;
+use Laminas\Stdlib\RequestInterface;
+use Laminas\View\Model\JsonModel;
+use Laminas\View\Model\ModelInterface;
+use LaminasTest\ApiTools\ContentNegotiation\TestAsset\ContentTypeController;
 use PHPUnit\Framework\TestCase;
 
 class AcceptListenerTest extends TestCase
 {
     use RouteMatchFactoryTrait;
 
-    protected function setUp()
+    protected function setUp(): void
     {
         $plugins  = new ControllerPluginManager(new ServiceManager());
         $selector = $plugins->get('AcceptableViewModelSelector');
 
         $this->listener   = new AcceptListener($selector, [
             'controllers' => [
-                'LaminasTest\ApiTools\ContentNegotiation\TestAsset\ContentTypeController' => 'Json',
+                ContentTypeController::class => 'Json',
             ],
-            'selectors' => [
+            'selectors'   => [
                 'Json' => [
-                    'Laminas\View\Model\JsonModel' => [
+                    JsonModel::class => [
                         'application/json',
                         'application/*+json',
                     ],
@@ -38,9 +43,9 @@ class AcceptListenerTest extends TestCase
             ],
         ]);
         $this->event      = new MvcEvent();
-        $this->controller = new TestAsset\ContentTypeController();
+        $this->controller = new ContentTypeController();
         $this->event->setTarget($this->controller);
-        $this->event->setRequest(new Request);
+        $this->event->setRequest(new Request());
         $this->event->setRouteMatch($this->createRouteMatch([
             'controller' => __NAMESPACE__ . '\TestAsset\ContentTypeController',
         ]));
@@ -56,9 +61,9 @@ class AcceptListenerTest extends TestCase
         $this->event->setResult(['foo' => 'bar']);
 
         $response = $listener($this->event);
-        $this->assertInstanceOf('Laminas\ApiTools\ApiProblem\ApiProblemResponse', $response);
+        $this->assertInstanceOf(ApiProblemResponse::class, $response);
         $this->assertEquals(406, $response->getApiProblem()->status);
-        $this->assertContains('Unable to resolve', $response->getApiProblem()->detail);
+        $this->assertStringContainsString('Unable to resolve', $response->getApiProblem()->detail);
     }
 
     public function testReturnADefaultViewModelIfNoCriteriaSpecifiedForAController()
@@ -69,7 +74,7 @@ class AcceptListenerTest extends TestCase
 
         $listener($this->event);
         $result = $this->event->getResult();
-        $this->assertInstanceOf('Laminas\View\Model\ModelInterface', $result);
+        $this->assertInstanceOf(ModelInterface::class, $result);
     }
 
     /**
@@ -77,7 +82,7 @@ class AcceptListenerTest extends TestCase
      */
     public function testShouldExitEarlyIfNonHttpRequestPresentInEvent()
     {
-        $request = $this->getMockBuilder('Laminas\Stdlib\RequestInterface')->getMock();
+        $request = $this->getMockBuilder(RequestInterface::class)->getMock();
         $this->event->setRequest($request);
 
         $listener = $this->listener;

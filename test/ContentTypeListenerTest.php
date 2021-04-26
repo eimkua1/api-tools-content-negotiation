@@ -8,35 +8,62 @@
 
 namespace LaminasTest\ApiTools\ContentNegotiation;
 
+use Generator;
+use Laminas\ApiTools\ApiProblem\ApiProblemResponse;
 use Laminas\ApiTools\ContentNegotiation\ContentTypeListener;
 use Laminas\ApiTools\ContentNegotiation\MultipartContentParser;
+use Laminas\ApiTools\ContentNegotiation\ParameterDataContainer;
 use Laminas\ApiTools\ContentNegotiation\Request as ContentNegotiationRequest;
+use Laminas\EventManager\EventManagerInterface;
 use Laminas\Http\Request;
 use Laminas\Mvc\MvcEvent;
 use Laminas\Stdlib\Parameters;
 use PHPUnit\Framework\TestCase;
 use ReflectionObject;
 
+use function basename;
+use function file_exists;
+use function file_get_contents;
+use function file_put_contents;
+use function filesize;
+use function json_encode;
+use function mkdir;
+use function realpath;
+use function rmdir;
+use function sprintf;
+use function str_replace;
+use function strpos;
+use function sys_get_temp_dir;
+use function tempnam;
+use function unlink;
+
+use const PHP_OS;
+use const UPLOAD_ERR_OK;
+
 class ContentTypeListenerTest extends TestCase
 {
     use RouteMatchFactoryTrait;
 
-    protected function setUp()
+    protected function setUp(): void
     {
         $this->listener = new ContentTypeListener();
     }
 
+    /**
+     * @return string[][]
+     */
     public function methodsWithBodies()
     {
         return [
-            'post' => ['POST'],
-            'patch' => ['PATCH'],
-            'put' => ['PUT'],
+            'post'   => ['POST'],
+            'patch'  => ['PATCH'],
+            'put'    => ['PUT'],
             'delete' => ['DELETE'],
         ];
     }
 
     /**
+     * @param string $method
      * @group 3
      * @dataProvider methodsWithBodies
      */
@@ -54,13 +81,14 @@ class ContentTypeListenerTest extends TestCase
         $event->setRouteMatch($this->createRouteMatch([]));
 
         $result = $listener($event);
-        $this->assertInstanceOf('Laminas\ApiTools\ApiProblem\ApiProblemResponse', $result);
+        $this->assertInstanceOf(ApiProblemResponse::class, $result);
         $problem = $result->getApiProblem();
         $this->assertEquals(400, $problem->status);
-        $this->assertContains('JSON decoding', $problem->detail);
+        $this->assertStringContainsString('JSON decoding', $problem->detail);
     }
 
     /**
+     * @param string $method
      * @group 3
      * @dataProvider methodsWithBodies
      */
@@ -78,12 +106,15 @@ class ContentTypeListenerTest extends TestCase
         $event->setRouteMatch($this->createRouteMatch([]));
 
         $result = $listener($event);
-        $this->assertInstanceOf('Laminas\ApiTools\ApiProblem\ApiProblemResponse', $result);
+        $this->assertInstanceOf(ApiProblemResponse::class, $result);
         $problem = $result->getApiProblem();
         $this->assertEquals(400, $problem->status);
-        $this->assertContains('JSON decoding', $problem->detail);
+        $this->assertStringContainsString('JSON decoding', $problem->detail);
     }
 
+    /**
+     * @return string[][]
+     */
     public function multipartFormDataMethods()
     {
         return [
@@ -94,6 +125,7 @@ class ContentTypeListenerTest extends TestCase
     }
 
     /**
+     * @param string $method
      * @dataProvider multipartFormDataMethods
      */
     public function testCanDecodeMultipartFormDataRequestsForPutPatchAndDeleteOperations($method)
@@ -111,10 +143,10 @@ class ContentTypeListenerTest extends TestCase
         $event->setRouteMatch($this->createRouteMatch([]));
 
         $listener = $this->listener;
-        $result = $listener($event);
+        $result   = $listener($event);
 
         $parameterData = $event->getParam('LaminasContentNegotiationParameterData');
-        $params = $parameterData->getBodyParams();
+        $params        = $parameterData->getBodyParams();
         $this->assertEquals([
             'mime_type' => 'md',
         ], $params);
@@ -122,18 +154,19 @@ class ContentTypeListenerTest extends TestCase
         $files = $request->getFiles();
         $this->assertEquals(1, $files->count());
         $file = $files->get('text');
-        $this->assertInternalType('array', $file);
+        $this->assertIsArray($file);
         $this->assertArrayHasKey('error', $file);
         $this->assertArrayHasKey('name', $file);
         $this->assertArrayHasKey('tmp_name', $file);
         $this->assertArrayHasKey('size', $file);
         $this->assertArrayHasKey('type', $file);
         $this->assertEquals('README.md', $file['name']);
-        $this->assertRegexp('/^laminasc/', basename($file['tmp_name']));
+        $this->assertMatchesRegularExpression('/^laminasc/', basename($file['tmp_name']));
         $this->assertTrue(file_exists($file['tmp_name']));
     }
 
     /**
+     * @param string $method
      * @dataProvider multipartFormDataMethods
      */
     public function testCanDecodeMultipartFormDataRequestsFromStreamsForPutAndPatchOperations($method)
@@ -151,10 +184,10 @@ class ContentTypeListenerTest extends TestCase
         $event->setRouteMatch($this->createRouteMatch([]));
 
         $listener = $this->listener;
-        $result = $listener($event);
+        $result   = $listener($event);
 
         $parameterData = $event->getParam('LaminasContentNegotiationParameterData');
-        $params = $parameterData->getBodyParams();
+        $params        = $parameterData->getBodyParams();
         $this->assertEquals([
             'mime_type' => 'md',
         ], $params);
@@ -162,14 +195,14 @@ class ContentTypeListenerTest extends TestCase
         $files = $request->getFiles();
         $this->assertEquals(1, $files->count());
         $file = $files->get('text');
-        $this->assertInternalType('array', $file);
+        $this->assertIsArray($file);
         $this->assertArrayHasKey('error', $file);
         $this->assertArrayHasKey('name', $file);
         $this->assertArrayHasKey('tmp_name', $file);
         $this->assertArrayHasKey('size', $file);
         $this->assertArrayHasKey('type', $file);
         $this->assertEquals('README.md', $file['name']);
-        $this->assertRegexp('/^laminasc/', basename($file['tmp_name']));
+        $this->assertMatchesRegularExpression('/^laminasc/', basename($file['tmp_name']));
         $this->assertTrue(file_exists($file['tmp_name']));
     }
 
@@ -184,7 +217,7 @@ class ContentTypeListenerTest extends TestCase
         $request->setContent(file_get_contents(__DIR__ . '/TestAsset/multipart-form-data.txt'));
 
         $target = new TestAsset\EventTarget();
-        $events = $this->getMockBuilder('Laminas\EventManager\EventManagerInterface')->getMock();
+        $events = $this->getMockBuilder(EventManagerInterface::class)->getMock();
         $events->expects($this->once())
             ->method('attach')
             ->with(
@@ -200,16 +233,16 @@ class ContentTypeListenerTest extends TestCase
         $event->setRouteMatch($this->createRouteMatch([]));
 
         $listener = $this->listener;
-        $result = $listener($event);
+        $result   = $listener($event);
     }
 
     public function testOnFinishWillRemoveAnyUploadFilesUploadedByTheListener()
     {
         $tmpDir  = MultipartContentParser::getUploadTempDir();
         $tmpFile = tempnam($tmpDir, 'laminasc');
-        file_put_contents($tmpFile, 'File created by ' . __CLASS__);
+        file_put_contents($tmpFile, 'File created by ' . self::class);
 
-        $files = new Parameters([
+        $files   = new Parameters([
             'test' => [
                 'error'    => UPLOAD_ERR_OK,
                 'name'     => 'test.txt',
@@ -234,16 +267,16 @@ class ContentTypeListenerTest extends TestCase
         }
 
         $this->listener->onFinish($event);
-        $this->assertFileNotExists($tmpFile);
+        $this->assertFileDoesNotExist($tmpFile);
     }
 
     public function testOnFinishDoesNotRemoveUploadFilesTheListenerDidNotCreate()
     {
         $tmpDir  = MultipartContentParser::getUploadTempDir();
         $tmpFile = tempnam($tmpDir, 'php');
-        file_put_contents($tmpFile, 'File created by ' . __CLASS__);
+        file_put_contents($tmpFile, 'File created by ' . self::class);
 
-        $files = new Parameters([
+        $files   = new Parameters([
             'test' => [
                 'error'    => UPLOAD_ERR_OK,
                 'name'     => 'test.txt',
@@ -265,11 +298,11 @@ class ContentTypeListenerTest extends TestCase
 
     public function testOnFinishDoesNotRemoveUploadFilesThatHaveBeenMoved()
     {
-        $tmpDir  = sys_get_temp_dir() . '/' . str_replace('\\', '_', __CLASS__);
+        $tmpDir = sys_get_temp_dir() . '/' . str_replace('\\', '_', self::class);
         mkdir($tmpDir);
         $tmpFile = tempnam($tmpDir, 'laminasc');
 
-        $files = new Parameters([
+        $files   = new Parameters([
             'test' => [
                 'error'    => UPLOAD_ERR_OK,
                 'name'     => 'test.txt',
@@ -290,6 +323,7 @@ class ContentTypeListenerTest extends TestCase
     }
 
     /**
+     * @param string $method
      * @group 35
      * @dataProvider methodsWithBodies
      */
@@ -312,6 +346,9 @@ class ContentTypeListenerTest extends TestCase
         $this->assertEquals([], $params->getBodyParams());
     }
 
+    /**
+     * @return string[][]
+     */
     public function methodsWithBlankBodies()
     {
         return [
@@ -331,6 +368,8 @@ class ContentTypeListenerTest extends TestCase
     }
 
     /**
+     * @param string $method
+     * @param mixed $content
      * @group 36
      * @dataProvider methodsWithBlankBodies
      */
@@ -353,25 +392,30 @@ class ContentTypeListenerTest extends TestCase
         $this->assertEquals([], $params->getBodyParams());
     }
 
+    /**
+     * @return string[][]
+     */
     public function methodsWithLeadingWhitespace()
     {
         return [
             'post-space'             => ['POST', ' {"foo": "bar"}'],
             'post-lines'             => ['POST', "\n\n{\"foo\": \"bar\"}"],
             'post-lines-and-space'   => ['POST', "  \n  \n{\"foo\": \"bar\"}"],
-            'patch-space'             => ['PATCH', ' {"foo": "bar"}'],
-            'patch-lines'             => ['PATCH', "\n\n{\"foo\": \"bar\"}"],
-            'patch-lines-and-space'   => ['PATCH', "  \n  \n{\"foo\": \"bar\"}"],
-            'put-space'             => ['PUT', ' {"foo": "bar"}'],
-            'put-lines'             => ['PUT', "\n\n{\"foo\": \"bar\"}"],
-            'put-lines-and-space'   => ['PUT', "  \n  \n{\"foo\": \"bar\"}"],
-            'delete-space'             => ['DELETE', ' {"foo": "bar"}'],
-            'delete-lines'             => ['DELETE', "\n\n{\"foo\": \"bar\"}"],
-            'delete-lines-and-space'   => ['DELETE', "  \n  \n{\"foo\": \"bar\"}"],
+            'patch-space'            => ['PATCH', ' {"foo": "bar"}'],
+            'patch-lines'            => ['PATCH', "\n\n{\"foo\": \"bar\"}"],
+            'patch-lines-and-space'  => ['PATCH', "  \n  \n{\"foo\": \"bar\"}"],
+            'put-space'              => ['PUT', ' {"foo": "bar"}'],
+            'put-lines'              => ['PUT', "\n\n{\"foo\": \"bar\"}"],
+            'put-lines-and-space'    => ['PUT', "  \n  \n{\"foo\": \"bar\"}"],
+            'delete-space'           => ['DELETE', ' {"foo": "bar"}'],
+            'delete-lines'           => ['DELETE', "\n\n{\"foo\": \"bar\"}"],
+            'delete-lines-and-space' => ['DELETE', "  \n  \n{\"foo\": \"bar\"}"],
         ];
     }
 
     /**
+     * @param string $method
+     * @param mixed $content
      * @group 36
      * @dataProvider methodsWithLeadingWhitespace
      */
@@ -394,25 +438,30 @@ class ContentTypeListenerTest extends TestCase
         $this->assertEquals(['foo' => 'bar'], $params->getBodyParams());
     }
 
+    /**
+     * @return string[][]
+     */
     public function methodsWithTrailingWhitespace()
     {
         return [
             'post-space'             => ['POST', '{"foo": "bar"} '],
             'post-lines'             => ['POST', "{\"foo\": \"bar\"}\n\n"],
             'post-lines-and-space'   => ['POST', "{\"foo\": \"bar\"}  \n  \n"],
-            'patch-space'             => ['PATCH', '{"foo": "bar"} '],
-            'patch-lines'             => ['PATCH', "{\"foo\": \"bar\"}\n\n"],
-            'patch-lines-and-space'   => ['PATCH', "{\"foo\": \"bar\"}  \n  \n"],
-            'put-space'             => ['PUT', '{"foo": "bar"} '],
-            'put-lines'             => ['PUT', "{\"foo\": \"bar\"}\n\n"],
-            'put-lines-and-space'   => ['PUT', "{\"foo\": \"bar\"}  \n  \n"],
-            'delete-space'             => ['DELETE', '{"foo": "bar"} '],
-            'delete-lines'             => ['DELETE', "{\"foo\": \"bar\"}\n\n"],
-            'delete-lines-and-space'   => ['DELETE', "{\"foo\": \"bar\"}  \n  \n"],
+            'patch-space'            => ['PATCH', '{"foo": "bar"} '],
+            'patch-lines'            => ['PATCH', "{\"foo\": \"bar\"}\n\n"],
+            'patch-lines-and-space'  => ['PATCH', "{\"foo\": \"bar\"}  \n  \n"],
+            'put-space'              => ['PUT', '{"foo": "bar"} '],
+            'put-lines'              => ['PUT', "{\"foo\": \"bar\"}\n\n"],
+            'put-lines-and-space'    => ['PUT', "{\"foo\": \"bar\"}  \n  \n"],
+            'delete-space'           => ['DELETE', '{"foo": "bar"} '],
+            'delete-lines'           => ['DELETE', "{\"foo\": \"bar\"}\n\n"],
+            'delete-lines-and-space' => ['DELETE', "{\"foo\": \"bar\"}  \n  \n"],
         ];
     }
 
     /**
+     * @param string $method
+     * @param mixed $content
      * @group 36
      * @dataProvider methodsWithTrailingWhitespace
      */
@@ -435,25 +484,30 @@ class ContentTypeListenerTest extends TestCase
         $this->assertEquals(['foo' => 'bar'], $params->getBodyParams());
     }
 
+    /**
+     * @return string[][]
+     */
     public function methodsWithLeadingAndTrailingWhitespace()
     {
         return [
             'post-space'             => ['POST', ' {"foo": "bar"} '],
             'post-lines'             => ['POST', "\n\n{\"foo\": \"bar\"}\n\n"],
             'post-lines-and-space'   => ['POST', "  \n  \n{\"foo\": \"bar\"}  \n  \n"],
-            'patch-space'             => ['PATCH', ' {"foo": "bar"} '],
-            'patch-lines'             => ['PATCH', "\n\n{\"foo\": \"bar\"}\n\n"],
-            'patch-lines-and-space'   => ['PATCH', "  \n  \n{\"foo\": \"bar\"}  \n  \n"],
-            'put-space'             => ['PUT', ' {"foo": "bar"} '],
-            'put-lines'             => ['PUT', "\n\n{\"foo\": \"bar\"}\n\n"],
-            'put-lines-and-space'   => ['PUT', "  \n  \n{\"foo\": \"bar\"}  \n  \n"],
-            'delete-space'             => ['DELETE', ' {"foo": "bar"} '],
-            'delete-lines'             => ['DELETE', "\n\n{\"foo\": \"bar\"}\n\n"],
-            'delete-lines-and-space'   => ['DELETE', "  \n  \n{\"foo\": \"bar\"}  \n  \n"],
+            'patch-space'            => ['PATCH', ' {"foo": "bar"} '],
+            'patch-lines'            => ['PATCH', "\n\n{\"foo\": \"bar\"}\n\n"],
+            'patch-lines-and-space'  => ['PATCH', "  \n  \n{\"foo\": \"bar\"}  \n  \n"],
+            'put-space'              => ['PUT', ' {"foo": "bar"} '],
+            'put-lines'              => ['PUT', "\n\n{\"foo\": \"bar\"}\n\n"],
+            'put-lines-and-space'    => ['PUT', "  \n  \n{\"foo\": \"bar\"}  \n  \n"],
+            'delete-space'           => ['DELETE', ' {"foo": "bar"} '],
+            'delete-lines'           => ['DELETE', "\n\n{\"foo\": \"bar\"}\n\n"],
+            'delete-lines-and-space' => ['DELETE', "  \n  \n{\"foo\": \"bar\"}  \n  \n"],
         ];
     }
 
     /**
+     * @param string $method
+     * @param mixed $content
      * @group 36
      * @dataProvider methodsWithLeadingAndTrailingWhitespace
      */
@@ -476,17 +530,22 @@ class ContentTypeListenerTest extends TestCase
         $this->assertEquals(['foo' => 'bar'], $params->getBodyParams());
     }
 
+    /**
+     * @return string[][]
+     */
     public function methodsWithWhitespaceInsideBody()
     {
         return [
-            'post-space'             => ['POST', '{"foo": "bar foo"}'],
-            'patch-space'             => ['PATCH', '{"foo": "bar foo"}'],
-            'put-space'             => ['PUT', '{"foo": "bar foo"}'],
-            'delete-space'             => ['DELETE', '{"foo": "bar foo"}'],
+            'post-space'   => ['POST', '{"foo": "bar foo"}'],
+            'patch-space'  => ['PATCH', '{"foo": "bar foo"}'],
+            'put-space'    => ['PUT', '{"foo": "bar foo"}'],
+            'delete-space' => ['DELETE', '{"foo": "bar foo"}'],
         ];
     }
 
     /**
+     * @param string $method
+     * @param mixed $content
      * @dataProvider methodsWithWhitespaceInsideBody
      */
     public function testWillNotRemoveWhitespaceInsideBody($method, $content)
@@ -526,12 +585,12 @@ class ContentTypeListenerTest extends TestCase
         $event->setRouteMatch($this->createRouteMatch([]));
 
         $listener = $this->listener;
-        $result = $listener($event);
+        $result   = $listener($event);
 
-        $this->assertInstanceOf('Laminas\ApiTools\ApiProblem\ApiProblemResponse', $result);
+        $this->assertInstanceOf(ApiProblemResponse::class, $result);
         $this->assertEquals(400, $result->getStatusCode());
         $details = $result->getApiProblem()->toArray();
-        $this->assertContains('does not contain a "name" field', $details['detail']);
+        $this->assertStringContainsString('does not contain a "name" field', $details['detail']);
     }
 
     public function testReturnsArrayWhenFieldNamesHaveArraySyntax()
@@ -546,18 +605,18 @@ class ContentTypeListenerTest extends TestCase
         $event = new MvcEvent();
         $event->setRequest($request);
         $event->setRouteMatch($this->createRouteMatch([]));
-        $listener = $this->listener;
-        $result = $listener($event);
+        $listener      = $this->listener;
+        $result        = $listener($event);
         $parameterData = $event->getParam('LaminasContentNegotiationParameterData');
-        $params = $parameterData->getBodyParams();
+        $params        = $parameterData->getBodyParams();
         $this->assertEquals([
             'string_value' => 'string_value_with&amp;ersand',
-            'array_name' => [
+            'array_name'   => [
                 'array_name[0]',
                 'array_name[1]',
                 'a' => 'array_name[a]',
                 'b' => [
-                    0 => 'array_name[b][0]',
+                    0   => 'array_name[b][0]',
                     'b' => 'array_name[b][b]',
                 ],
             ],
@@ -565,13 +624,14 @@ class ContentTypeListenerTest extends TestCase
     }
 
     /**
+     * @param string $method
      * @group 50
      * @dataProvider methodsWithBodies
      */
     public function testMergesHalEmbeddedPropertiesIntoTopLevelObjectWhenDecodingHalJson($method)
     {
         $data = [
-            'foo' => 'bar',
+            'foo'       => 'bar',
             '_embedded' => [
                 'bar' => [
                     'baz' => 'bat',
@@ -605,6 +665,9 @@ class ContentTypeListenerTest extends TestCase
         $this->assertEquals($expected, $params->getBodyParams());
     }
 
+    /**
+     * @return array
+     */
     public function methodsWithStringContent()
     {
         return [
@@ -622,7 +685,6 @@ class ContentTypeListenerTest extends TestCase
 
     /**
      * @dataProvider methodsWithStringContent
-     *
      * @param string $method
      * @param string $data
      * @param string $key
@@ -642,28 +704,31 @@ class ContentTypeListenerTest extends TestCase
         $result = $listener($event);
         $this->assertNull($result);
 
-        /** @var \Laminas\ApiTools\ContentNegotiation\ParameterDataContainer $params */
+        /** @var ParameterDataContainer $params */
         $params = $event->getParam('LaminasContentNegotiationParameterData');
-        $array = $params->getBodyParams();
+        $array  = $params->getBodyParams();
 
         $this->assertArrayHasKey($key, $array);
         $this->assertSame('', $array[$key]);
     }
 
+    /**
+     * @return Generator
+     */
     public function nonPostMethodsContent()
     {
         $dataSets = [
             'object' => [
-                'data' => '{"key": "value"}',
+                'data'     => '{"key": "value"}',
                 'expected' => ['key' => 'value'],
             ],
-            'array' => [
-                'data' => '["first", "second"]',
+            'array'  => [
+                'data'     => '["first", "second"]',
                 'expected' => ['first', 'second'],
             ],
             /** @see https://github.com/zfcampus/zf-content-negotiation/pull/96 */
             'empty' => [
-                'data' => '',
+                'data'     => '',
                 'expected' => [],
             ],
         ];
@@ -677,10 +742,10 @@ class ContentTypeListenerTest extends TestCase
     }
 
     /**
-     * @dataProvider nonPostMethodsContent
-     *
      * @see https://github.com/zfcampus/zf-content-negotiation/pull/94
      * @see https://github.com/zfcampus/zf-content-negotiation/pull/96
+     *
+     * @dataProvider nonPostMethodsContent
      * @param string $method HTTP method
      * @param string $data HTTP body content
      * @param mixed $expected Expected body params
@@ -703,9 +768,9 @@ class ContentTypeListenerTest extends TestCase
         $result = $listener($event);
         $this->assertNull($result);
 
-        /** @var \Laminas\ApiTools\ContentNegotiation\ParameterDataContainer $params */
+        /** @var ParameterDataContainer $params */
         $params = $event->getParam('LaminasContentNegotiationParameterData');
-        $test = $params->getBodyParams();
+        $test   = $params->getBodyParams();
 
         $this->assertSame($expected, $test);
     }

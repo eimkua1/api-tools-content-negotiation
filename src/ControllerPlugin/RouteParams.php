@@ -16,6 +16,9 @@ use Laminas\Mvc\InjectApplicationEventInterface;
 
 class RouteParams extends AbstractPlugin
 {
+    /**
+     * @return array
+     */
     public function __invoke()
     {
         $controller = $this->getController();

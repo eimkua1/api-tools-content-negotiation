@@ -12,6 +12,9 @@ use Laminas\Stdlib\JsonSerializable;
 
 class ModelWithJson implements JsonSerializable
 {
+    /**
+     * @return string[]
+     */
     public function jsonSerialize()
     {
         return ['foo' => 'bar'];

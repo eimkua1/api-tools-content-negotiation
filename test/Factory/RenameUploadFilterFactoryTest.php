@@ -8,13 +8,14 @@ use PHPUnit\Framework\TestCase;
 
 class RenameUploadFilterFactoryTest extends TestCase
 {
+    /** @var FilterPluginManager */
     protected $filters;
 
-    protected function setUp()
+    protected function setUp(): void
     {
-        $config = [
+        $config        = [
             'factories' => [
-                'filerenameupload' => 'Laminas\ApiTools\ContentNegotiation\Factory\RenameUploadFilterFactory',
+                'filerenameupload' => RenameUploadFilterFactory::class,
             ],
         ];
         $this->filters = new FilterPluginManager(new ServiceManager(), $config);
